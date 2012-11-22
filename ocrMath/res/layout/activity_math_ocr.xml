@@ -1,14 +1,32 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainContent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MathOcr" >
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:text="@string/hello_world" />
+    <ImageView
+        android:id="@+id/baseImage"
+        android:layout_width="fill_parent"
+        android:layout_height="125dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/test1p1" />
+
+    <ImageView
+        android:id="@+id/grayedImage"
+        android:layout_width="fill_parent"
+        android:layout_height="125dp"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/baseImage"
+        android:src="@drawable/test1p1" />
+
+    <ImageView
+        android:id="@+id/croppedImage"
+        android:layout_width="fill_parent"
+        android:layout_height="125dp"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/grayedImage"
+        android:src="@drawable/test1p1" />
 
 </RelativeLayout>
