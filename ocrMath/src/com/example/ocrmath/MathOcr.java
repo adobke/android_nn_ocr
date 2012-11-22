@@ -17,6 +17,7 @@ public class MathOcr extends Activity {
         ImageView start = (ImageView) findViewById(R.id.baseImage);
         ImageView gray = (ImageView) findViewById(R.id.grayedImage);
         ImageView crop = (ImageView) findViewById(R.id.croppedImage);
+        ImageView cropH = (ImageView) findViewById(R.id.croppedHImage);
 
         
         Bitmap testImg = BitmapFactory.decodeResource(getResources(), R.drawable.test1p1);
@@ -27,6 +28,9 @@ public class MathOcr extends Activity {
 
         Bitmap cropped = cropVertically(grayScale);
         crop.setImageBitmap(cropped);
+        
+        Bitmap croppedH = cropHorizontally(cropped);
+        cropH.setImageBitmap(croppedH);
     }
 
     @Override
@@ -57,7 +61,7 @@ public class MathOcr extends Activity {
     public Bitmap cropVertically(Bitmap input) {
     	int topIndex = -1;
     	int botIndex = -1;
-    	int THRESH = 125;
+    	int THRESH = 135;
     	
     	// Find top and bottom indices
     	
@@ -95,9 +99,57 @@ public class MathOcr extends Activity {
     	
     	
     	for(int i = 0; i < Math.abs(botIndex - topIndex); ++i) {
-        	Log.v("ocrdebug","i: " + i);
     		for(int j = 0; j < input.getWidth(); ++j) {
     			cropped.setPixel(j, i, input.getPixel(j,topIndex+i));
+    		}
+    	}
+    	
+    	return cropped;
+    }
+    
+    public Bitmap cropHorizontally(Bitmap input) {
+    	int leftIndex = -1;
+    	int rightIndex = -1;
+    	int THRESH = 135;
+    	
+    	// Find top and bottom indices
+    	
+    	for(int i = 0; i < input.getWidth(); ++i) {
+    		boolean found = false;
+    		// Check each row
+    		for(int j = 0; j < input.getHeight(); ++j) {
+    			if( (input.getPixel(i, j) & 0xFF ) < THRESH)
+    				found = true;
+    		}
+    		if(found) {
+    			leftIndex = i;
+    			break;
+    		}
+    	}
+    	
+    	for(int i = input.getWidth()-1; i >= 0; --i) {
+    		boolean found = false;
+    		// Check each row
+    		for(int j = 0; j < input.getHeight(); ++j) {
+    			if( (input.getPixel(i, j) & 0xFF) < THRESH)
+    				found = true;
+    		}
+    		if(found) {
+    			rightIndex = i;
+    			break;
+    		}
+    	}
+    	
+
+    	Log.v("ocrdebug","left: " + leftIndex);
+    	Log.v("ocrdebug","Right: " + rightIndex);
+    	
+    	Bitmap cropped = Bitmap.createBitmap(rightIndex - leftIndex,input.getHeight(),input.getConfig());
+    	
+    	
+    	for(int i = 0; i < input.getHeight(); ++i) {
+    		for(int j = 0; j < (rightIndex-leftIndex); ++j) {
+    			cropped.setPixel(j, i, input.getPixel(leftIndex+j,i));
     		}
     	}
     	

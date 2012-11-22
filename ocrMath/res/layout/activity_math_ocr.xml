@@ -24,9 +24,17 @@
     <ImageView
         android:id="@+id/croppedImage"
         android:layout_width="fill_parent"
-        android:layout_height="125dp"
+        android:layout_height="75dp"
         android:layout_alignParentLeft="true"
         android:layout_below="@+id/grayedImage"
+        android:src="@drawable/test1p1" />
+
+    <ImageView
+        android:id="@+id/croppedHImage"
+        android:layout_width="fill_parent"
+        android:layout_height="75dp"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/croppedImage"
         android:src="@drawable/test1p1" />
 
 </RelativeLayout>
