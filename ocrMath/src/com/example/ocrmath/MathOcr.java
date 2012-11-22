@@ -11,6 +11,7 @@ public class MathOcr extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_math_ocr);
+        
     }
 
     @Override
