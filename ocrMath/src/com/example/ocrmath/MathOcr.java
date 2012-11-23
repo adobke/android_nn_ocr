@@ -363,7 +363,7 @@ public class MathOcr extends Activity {
     		// now create a new largest dimension^2 Bitmap to hold our scaled image.
     		character = Bitmap.createBitmap(largestDim, largestDim, source.getConfig());
     		
-    		// White out all the pixels in the new Bitmap.
+    		// White out all the pixels in the new Bitmap. Doing this as a precaution.
     		for(int i = 0; i < largestDim; i++) {
     			for(int j = 0; j < largestDim; j++) {
     				character.setPixel(j, i, Color.WHITE);
@@ -371,16 +371,22 @@ public class MathOcr extends Activity {
     		}
     		
     		// now center the old bitmap image on the new bitmap (presumably the new image is wider, but it could be taller)
-    		
+    		int startWidth = largestDim/2 - imageWidth/2;
+    		int startHeight = largestDim/2 - imageHeight/2;
+    		for(int i = topIndex; i < botIndex; i++) {
+    			for(int j = pair.get(0); j < pair.get(1); j++){
+    				if((source.getPixel(j, i) & 0xFF) < THRESH)
+    					character.setPixel(startWidth + j, startHeight + i, Color.BLACK);
+    			}
+    		}
     		
     		// Fill in the array of booleans according to the criterion that dictates a full pixel.
-    		int width = largestDim/outputWidth;
-    		int height = largestDim/outputHeight;
-    		
     		neuralInput = new boolean[outputHeight][outputWidth];
     		
     		int count;
     		int total;
+    		int width = largestDim/outputWidth;
+    		int height = largestDim/outputHeight;
     		
     		for(int i = 0; i < outputHeight; i ++){
     			for(int j = 0; j < outputWidth; j++){
@@ -397,7 +403,7 @@ public class MathOcr extends Activity {
     					neuralInput[i][j] = true;
     			}
     		}
-    		
+    		character.recycle();
     		ret.add(neuralInput);
     	}
     	
