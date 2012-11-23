@@ -29,6 +29,9 @@ public class MathOcr extends Activity {
         
         Bitmap grayScale = toGrayscale(testImg);
         gray.setImageBitmap(grayScale);
+        
+        Bitmap cropped= crop(grayScale);
+        crop.setImageBitmap(cropped);
 
 //        Bitmap cropped = cropVertically(grayScale);
 //        crop.setImageBitmap(cropped);
@@ -211,7 +214,7 @@ public class MathOcr extends Activity {
     	for(int i = 0; i < input.getWidth(); ++i) {
     		boolean found = false;
     		// Check each row
-    		for(int j = 0; j < input.getHeight(); ++j) {
+    		for(int j = topIndex; j < botIndex; ++j) {
     			if( (input.getPixel(i, j) & 0xFF ) < THRESH)
     				found = true;
     		}
@@ -221,10 +224,10 @@ public class MathOcr extends Activity {
     		}
     	}
     	
-    	for(int i = input.getWidth()-1; i >= 0; --i) {
+    	for(int i = input.getWidth()-1; i >= leftIndex; --i) {
     		boolean found = false;
     		// Check each row
-    		for(int j = 0; j < input.getHeight(); ++j) {
+    		for(int j = topIndex; j < botIndex; ++j) {
     			if( (input.getPixel(i, j) & 0xFF) < THRESH)
     				found = true;
     		}
@@ -249,5 +252,6 @@ public class MathOcr extends Activity {
     	
     	return cropped;
     }
+    
     
 }
