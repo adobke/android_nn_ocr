@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
@@ -310,4 +311,96 @@ public class MathOcr extends Activity {
     	
     }
     
+    /* Presumably we want the images to all be the same size so that they
+     * can be fed into the neural network with ease. However it can't hurt
+     * to make the function generate boolean 2d arrays that can vary with
+     * the input.
+     */
+    public ArrayList<boolean[][]> scaleBitmap(Bitmap source, int outputWidth, int outputHeight, ArrayList<ArrayList<Integer>> pairs) {
+    	final int THRESH = 185;
+    	final double OUTPUTTHRESH = .5;
+    	int largestDim;
+    	int imageWidth, imageHeight;
+    	int topIndex, botIndex;
+    	
+    	Bitmap character;
+    	
+    	boolean[][] neuralInput;
+    	ArrayList<boolean[][]> ret = new ArrayList<boolean[][]>(pairs.size());
+    	
+    	
+    	// Loop over the pairs in the list.
+    	for( ArrayList<Integer> pair: pairs ){
+    		topIndex = 0;
+    		botIndex = 0;
+    	
+    		// Subtract the left index from the right index to get the width
+    		// of this character.
+    		imageWidth = pair.get(1) - pair.get(0);
+    		
+    		// we want to select that area of the bitmap
+    		// then we need to determine its largest dimension.
+    		
+    		// Determine the bottom index and top index of this part of the image,
+    		// so that we can zoom in as much as possible on this part of the image.
+    		for(int i = 0; i < source.getHeight(); i++) {
+    			for(int j = pair.get(0); j < pair.get(1); j++){
+    				if( (source.getPixel(i, j) & 0xFF) < THRESH && topIndex == 0 )
+        				topIndex = i;
+    				else if( (source.getPixel(i, j) & 0xFF) < THRESH)
+    					botIndex = i;
+    			}
+    		}
+    		
+    		// Get the image height.
+    		imageHeight = Math.abs(botIndex - topIndex);
+    		
+    		if(imageWidth > imageHeight)
+    			largestDim = imageWidth;
+    		else
+    			largestDim = imageHeight;
+    		
+    		// now create a new largest dimension^2 Bitmap to hold our scaled image.
+    		character = Bitmap.createBitmap(largestDim, largestDim, source.getConfig());
+    		
+    		// White out all the pixels in the new Bitmap.
+    		for(int i = 0; i < largestDim; i++) {
+    			for(int j = 0; j < largestDim; j++) {
+    				character.setPixel(j, i, Color.WHITE);
+    			}
+    		}
+    		
+    		// now center the old bitmap image on the new bitmap (presumably the new image is wider, but it could be taller)
+    		
+    		
+    		// Fill in the array of booleans according to the criterion that dictates a full pixel.
+    		int width = largestDim/outputWidth;
+    		int height = largestDim/outputHeight;
+    		
+    		neuralInput = new boolean[outputHeight][outputWidth];
+    		
+    		int count;
+    		int total;
+    		
+    		for(int i = 0; i < outputHeight; i ++){
+    			for(int j = 0; j < outputWidth; j++){
+    				count = 0;
+    				total = 0;
+    				for(int imagei = i * height; imagei < (i+1) * height; imagei++) {
+    					for(int imagej = j * width; imagej < (j+1) * width; imagej++){
+    						if((character.getPixel(j,i) & 0xFF) < THRESH)
+    							count++;
+    						total++;
+    					}
+    				}
+    				if(((double)count)/total > OUTPUTTHRESH)
+    					neuralInput[i][j] = true;
+    			}
+    		}
+    		
+    		ret.add(neuralInput);
+    	}
+    	
+    	return ret;
+    }
 }
