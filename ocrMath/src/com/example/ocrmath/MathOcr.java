@@ -1,5 +1,7 @@
 package com.example.ocrmath;
 
+import java.util.ArrayList;
+
 import android.os.Bundle;
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -21,7 +23,7 @@ public class MathOcr extends Activity {
         ImageView start = (ImageView) findViewById(R.id.baseImage);
         ImageView gray = (ImageView) findViewById(R.id.grayedImage);
         ImageView crop = (ImageView) findViewById(R.id.croppedImage);
-        ImageView cropH = (ImageView) findViewById(R.id.croppedHImage);
+       //ImageView cropH = (ImageView) findViewById(R.id.croppedHImage);
 
         
         Bitmap testImg = BitmapFactory.decodeResource(getResources(), R.drawable.test1p1);
@@ -32,6 +34,8 @@ public class MathOcr extends Activity {
         
         Bitmap cropped= crop(grayScale);
         crop.setImageBitmap(cropped);
+        
+        findIndices(cropped);
 
 //        Bitmap cropped = cropVertically(grayScale);
 //        crop.setImageBitmap(cropped);
@@ -48,35 +52,40 @@ public class MathOcr extends Activity {
     }
     
     public Bitmap toGrayscale(Bitmap input) {
-    	int width, height;
-        height = input.getHeight();
-        width = input.getWidth();    
-
-        Bitmap bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-        Canvas c = new Canvas(bmpGrayscale);
-        Paint paint = new Paint();
-        ColorMatrix cm = new ColorMatrix();
-        cm.setSaturation(0);
-        ColorMatrixColorFilter f = new ColorMatrixColorFilter(cm);
-        paint.setColorFilter(f);
-        c.drawBitmap(input, 0, 0, paint);
-        return bmpGrayscale;
+//    	int width, height;
+//        height = input.getHeight();
+//        width = input.getWidth();    
+//
+//        Bitmap bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+//        Canvas c = new Canvas(bmpGrayscale);
+//        Paint paint = new Paint();
+//        ColorMatrix cm = new ColorMatrix();
+//        cm.setSaturation(0);
+//        ColorMatrixColorFilter f = new ColorMatrixColorFilter(cm);
+//        paint.setColorFilter(f);
+//        c.drawBitmap(input, 0, 0, paint);
+//        return bmpGrayscale;
    	
-//    	Bitmap grayScaled = Bitmap.createBitmap(input.getWidth(),input.getHeight(),input.getConfig());
-//		int avg = 0;
-//    	for(int i = 0; i < grayScaled.getHeight(); ++i) {
-//    		for(int j = 0; j < grayScaled.getWidth(); ++j) {
-//    			// color is really just an int
-//    			avg = (input.getPixel(j, i) >> 16) & 0xFF;
-//    			avg += (input.getPixel(j, i) >> 8) & 0xFF;
-//    			avg += (input.getPixel(j, i) & 0xFF);
-//    			avg /= 3;
-//    			avg &= 0xFF;
-//    			avg = (avg << 16) | (avg << 8) | avg;
-//    			grayScaled.setPixel(j, i, avg);
-//    		}
-//    	}
-//    	return grayScaled;
+    	Bitmap grayScaled = Bitmap.createBitmap(input.getWidth(),input.getHeight(),input.getConfig());
+		int avg = 0;
+		int black = 0;
+		int white = -1;
+    	for(int i = 0; i < grayScaled.getHeight(); ++i) {
+    		for(int j = 0; j < grayScaled.getWidth(); ++j) {
+    			// color is really just an int
+    			avg = (input.getPixel(j, i) >> 16) & 0xFF;
+    			avg += (input.getPixel(j, i) >> 8) & 0xFF;
+    			avg += (input.getPixel(j, i) & 0xFF);
+    			avg /= 3;
+    			avg &= 0xFF;
+    			avg = (avg << 16) | (avg << 8) | avg;
+    			if ((avg & 0xFF) < 155)
+    				grayScaled.setPixel(j, i, black);
+    			else
+    				grayScaled.setPixel(j, i, white);
+    		}
+    	}
+    	return grayScaled;
     }
     
     public Bitmap cropVertically(Bitmap input) {
@@ -253,5 +262,52 @@ public class MathOcr extends Activity {
     	return cropped;
     }
     
+    public ArrayList < ArrayList<Integer> > findIndices(Bitmap input) {
+    	int currentStart = 1;
+    	int THRESH = 185;
+    	ArrayList<ArrayList<Integer>> indices = new ArrayList<ArrayList<Integer>>();
+    	
+    	boolean foundStart = true;
+    	for(int i = 1; i < input.getWidth(); ++i) {
+    		boolean dark = false;
+    		// Check each row
+    		for(int j = 0; j < input.getHeight(); ++j) {
+    			if( (input.getPixel(i, j) & 0xFF) < THRESH)
+    				dark = true;
+    		}
+    		if(dark && !foundStart) {
+    			currentStart = i;
+    			foundStart = true;
+    		} else if (!dark && foundStart) {
+    			ArrayList<Integer> duple = new ArrayList<Integer>(2);
+    			duple.add(0, currentStart-1);
+    			duple.add(1, i+1);
+    			indices.add(duple);
+    			Log.v("ocrdebug","start: " + currentStart + " " + i);
+    			foundStart = false;
+    		}
+    	}
+    	
+    	if (foundStart) {
+	    	ArrayList<Integer> duple = new ArrayList<Integer>(2);
+			duple.add(0, currentStart-1);
+			duple.add(1, input.getWidth()-1);
+			indices.add(duple);
+    	}
+    	
+    	for(ArrayList<Integer> duple: indices) {
+    		int red = (255 << 16);
+    		int green = (255 << 8);
+    		for(int j = 0; j < input.getHeight(); ++j) {
+    			input.setPixel(duple.get(0), j, red); 
+    		}
+    		for(int j = 0; j < input.getHeight(); ++j) {
+    			input.setPixel(duple.get(1), j, green); 
+    		}
+    	}
+		
+    	return indices;
+    	
+    }
     
 }
