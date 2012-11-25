@@ -16,28 +16,31 @@ import android.view.Menu;
 import android.widget.ImageView;
 
 public class MathOcr extends Activity {
-
+	ImageView crop;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_math_ocr);
         ImageView start = (ImageView) findViewById(R.id.baseImage);
         ImageView gray = (ImageView) findViewById(R.id.grayedImage);
-        ImageView crop = (ImageView) findViewById(R.id.croppedImage);
+        crop = (ImageView) findViewById(R.id.croppedImage);
        //ImageView cropH = (ImageView) findViewById(R.id.croppedHImage);
 
         
         Bitmap testImg = BitmapFactory.decodeResource(getResources(), R.drawable.test1p1);
-        start.setImageBitmap(testImg);
+        //start.setImageBitmap(testImg);
         
         Bitmap grayScale = toGrayscale(testImg);
-        gray.setImageBitmap(grayScale);
-        
+        testImg.recycle();
         Bitmap cropped= crop(grayScale);
-        crop.setImageBitmap(cropped);
+   
+        //gray.setImageBitmap(cropped);
+        ArrayList<boolean[][]> result = scaleBitmap(cropped,30,30,findIndices(cropped));
+        cropped.recycle();
+        crop.setImageBitmap(toBitmap(result.get(2)));
         
-        findIndices(cropped);
-
+        Log.v("asdf","result length: " + result.size());
+        //Log.v("asdf"," " + result.get(3)[0][0] );
 //        Bitmap cropped = cropVertically(grayScale);
 //        crop.setImageBitmap(cropped);
 //        
@@ -50,6 +53,19 @@ public class MathOcr extends Activity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.activity_math_ocr, menu);
         return true;
+    }
+    
+    public Bitmap toBitmap(boolean[][] input) {
+    	Bitmap output = Bitmap.createBitmap(30, 30, Bitmap.Config.RGB_565);
+    	for(int i = 0; i < 30; ++i) 
+    		for(int j = 0; j < 30; ++j)
+    			if (input[i][j])
+    				output.setPixel(j, i, Color.BLACK);
+    			else
+    				output.setPixel(j,i,Color.WHITE);
+  
+    	return output;
+
     }
     
     public Bitmap toGrayscale(Bitmap input) {
@@ -121,11 +137,7 @@ public class MathOcr extends Activity {
     			break;
     		}
     	}
-    	
-
-    	Log.v("ocrdebug","top: " + topIndex);
-    	Log.v("ocrdebug","bot: " + botIndex);
-    	
+    	  	
     	Bitmap cropped = Bitmap.createBitmap(input.getWidth(),Math.abs(botIndex - topIndex),input.getConfig());
     	
     	
@@ -170,10 +182,6 @@ public class MathOcr extends Activity {
     			break;
     		}
     	}
-    	
-
-    	Log.v("ocrdebug","left: " + leftIndex);
-    	Log.v("ocrdebug","Right: " + rightIndex);
     	
     	Bitmap cropped = Bitmap.createBitmap(rightIndex - leftIndex,input.getHeight(),input.getConfig());
     	
@@ -246,11 +254,7 @@ public class MathOcr extends Activity {
     			break;
     		}
     	}
-    	
 
-    	Log.v("ocrdebug","left: " + leftIndex);
-    	Log.v("ocrdebug","Right: " + rightIndex);
-    	
     	Bitmap cropped = Bitmap.createBitmap(rightIndex - leftIndex,Math.abs(botIndex - topIndex),input.getConfig());
     	
     	
@@ -296,16 +300,16 @@ public class MathOcr extends Activity {
 			indices.add(duple);
     	}
     	
-    	for(ArrayList<Integer> duple: indices) {
-    		int red = (255 << 16);
-    		int green = (255 << 8);
-    		for(int j = 0; j < input.getHeight(); ++j) {
-    			input.setPixel(duple.get(0), j, red); 
-    		}
-    		for(int j = 0; j < input.getHeight(); ++j) {
-    			input.setPixel(duple.get(1), j, green); 
-    		}
-    	}
+//    	for(ArrayList<Integer> duple: indices) {
+//    		int red = (255 << 16);
+//    		int green = (255 << 8);
+//    		for(int j = 0; j < input.getHeight(); ++j) {
+//    			input.setPixel(duple.get(0), j, red); 
+//    		}
+//    		for(int j = 0; j < input.getHeight(); ++j) {
+//    			input.setPixel(duple.get(1), j, green); 
+//    		}
+//    	}
 		
     	return indices;
     	
@@ -318,7 +322,7 @@ public class MathOcr extends Activity {
      */
     public ArrayList<boolean[][]> scaleBitmap(Bitmap source, int outputWidth, int outputHeight, ArrayList<ArrayList<Integer>> pairs) {
     	final int THRESH = 185;
-    	final double OUTPUTTHRESH = .5;
+    	final double OUTPUTTHRESH = .1;
     	int largestDim;
     	int imageWidth, imageHeight;
     	int topIndex, botIndex;
@@ -330,6 +334,7 @@ public class MathOcr extends Activity {
     	
     	
     	// Loop over the pairs in the list.
+    	//ArrayList<Integer> pair = pairs.get(1);
     	for( ArrayList<Integer> pair: pairs ){
     		topIndex = 0;
     		botIndex = 0;
@@ -345,9 +350,9 @@ public class MathOcr extends Activity {
     		// so that we can zoom in as much as possible on this part of the image.
     		for(int i = 0; i < source.getHeight(); i++) {
     			for(int j = pair.get(0); j < pair.get(1); j++){
-    				if( (source.getPixel(i, j) & 0xFF) < THRESH && topIndex == 0 )
+    				if( ((source.getPixel(j, i) & 0xFF) < THRESH) && (topIndex == 0) )
         				topIndex = i;
-    				else if( (source.getPixel(i, j) & 0xFF) < THRESH)
+    				else if( (source.getPixel(j, i) & 0xFF) < THRESH)
     					botIndex = i;
     			}
     		}
@@ -373,9 +378,9 @@ public class MathOcr extends Activity {
     		// now center the old bitmap image on the new bitmap (presumably the new image is wider, but it could be taller)
     		int startWidth = largestDim/2 - imageWidth/2;
     		int startHeight = largestDim/2 - imageHeight/2;
-    		for(int i = topIndex; i < botIndex; i++) {
-    			for(int j = pair.get(0); j < pair.get(1); j++){
-    				if((source.getPixel(j, i) & 0xFF) < THRESH)
+    		for(int i = 0; i < imageHeight; i++) {
+    			for(int j = 0; j < imageWidth; j++){
+    				if((source.getPixel(pair.get(0)+j, topIndex+i) & 0xFF) < THRESH)
     					character.setPixel(startWidth + j, startHeight + i, Color.BLACK);
     			}
     		}
@@ -384,22 +389,23 @@ public class MathOcr extends Activity {
     		neuralInput = new boolean[outputHeight][outputWidth];
     		
     		int count;
-    		int total;
-    		int width = largestDim/outputWidth;
-    		int height = largestDim/outputHeight;
-    		
+    		int width = (int) Math.ceil(((double)largestDim)/outputWidth);
+    		int height = (int) Math.ceil(((double)largestDim)/outputHeight);
+    	
+    		//crop.setImageBitmap(character);
     		for(int i = 0; i < outputHeight; i ++){
     			for(int j = 0; j < outputWidth; j++){
     				count = 0;
-    				total = 0;
     				for(int imagei = i * height; imagei < (i+1) * height; imagei++) {
     					for(int imagej = j * width; imagej < (j+1) * width; imagej++){
-    						if((character.getPixel(j,i) & 0xFF) < THRESH)
-    							count++;
-    						total++;
+    						if(imagej >= largestDim || imagei >= largestDim)
+    							continue;
+    						if((character.getPixel(imagej,imagei) & 0xFF) < THRESH)
+    							count++;		
     					}
     				}
-    				if(((double)count)/total > OUTPUTTHRESH)
+    				
+    				if(count > 0)
     					neuralInput[i][j] = true;
     			}
     		}
