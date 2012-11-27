@@ -16,14 +16,16 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ImageSwitcher;
 import android.widget.ImageView;
 
 public class MathOcr extends Activity {
-	ImageView crop;
+	//ImageView crop;
 	ImageView gray;
 	ImageView start;
-	
+	ImageSwitcher charImages;
 	Bitmap base;
+	int threshold = 140;
 	
     private static final int SELECT_PICTURE = 1;
 
@@ -36,13 +38,13 @@ public class MathOcr extends Activity {
         
         start = (ImageView) findViewById(R.id.baseImage);
         gray = (ImageView) findViewById(R.id.grayedImage);
-        crop = (ImageView) findViewById(R.id.croppedImage);
-        
+        //crop = (ImageView) findViewById(R.id.croppedImage);
+        charImages = (ImageSwitcher) findViewById(R.id.imageSwitcher);
         base = BitmapFactory.decodeResource(getResources(), R.drawable.test1p1);
         if(base == null){
         	Log.v("asdf", "base is null");
         }
-		setupViews();
+		//setupViews();
         
     	((Button) findViewById(R.id.pictureButton))
         .setOnClickListener(new OnClickListener() {
@@ -66,9 +68,17 @@ public class MathOcr extends Activity {
         //grayScale.recycle();
         start.setImageBitmap(base);
         gray.setImageBitmap(cropped);
-        ArrayList<boolean[][]> result = scaleBitmap(cropped,30,30,findIndices(cropped));
+        ArrayList<boolean[][]> results = scaleBitmap(cropped,30,30,findIndices(cropped));
         //cropped.recycle();
-        crop.setImageBitmap(toBitmap(result.get(0)));
+        //crop.setImageBitmap(toBitmap(result.get(0)));
+        for (boolean[][] chr: results) {
+        	ImageView image = new ImageView(this);
+        	image.setMaxHeight(30);
+        	image.setMaxWidth(30);
+        	image.setImageBitmap(toBitmap(chr));
+        	image.setVisibility(View.VISIBLE);
+        	image.setEnabled(true);
+        }
     }
 
     @Override
@@ -98,6 +108,7 @@ public class MathOcr extends Activity {
 		int white = -1;
 		int height = input.getHeight();
 		int width = input.getWidth();
+		
     	for(int i = 0; i < height; ++i) {
     		for(int j = 0; j < width; ++j) {
     			// color is really just an int
@@ -106,7 +117,7 @@ public class MathOcr extends Activity {
     			avg += (input.getPixel(j, i) & 0xFF);
     			avg /= 3;
     			//avg = (avg << 16) | (avg << 8) | avg;
-    			if (avg  < 145)
+    			if (avg  < threshold)
     				grayScaled.setPixel(j, i, black);
     			else
     				grayScaled.setPixel(j, i, white);
@@ -213,29 +224,29 @@ public class MathOcr extends Activity {
     	int rightIndex = -1;
     	int topIndex = -1;
     	int botIndex = -1;
-    	int THRESH = 135;
-    	  	
+    	int THRESH = threshold;
+    	int foundThres = 15;
     	for(int i = 0; i < input.getHeight(); ++i) {
-    		boolean found = false;
+    		int found = 0;
     		// Check each row
     		for(int j = 0; j < input.getWidth(); ++j) {
     			if( (input.getPixel(j, i) & 0xFF ) < THRESH)
-    				found = true;
+    				found++;
     		}
-    		if(found) {
+    		if(found > foundThres) {
     			topIndex = i;
     			break;
     		}
     	}
     	
     	for(int i = input.getHeight()-1; i >= 0; --i) {
-    		boolean found = false;
+    		int found = 0;
     		// Check each row
     		for(int j = 0; j < input.getWidth(); ++j) {
     			if( (input.getPixel(j, i) & 0xFF) < THRESH)
-    				found = true;
+    				found++;
     		}
-    		if(found) {
+    		if(found>foundThres) {
     			botIndex = i;
     			break;
     		}
@@ -243,26 +254,26 @@ public class MathOcr extends Activity {
     	
     	
     	for(int i = 0; i < input.getWidth(); ++i) {
-    		boolean found = false;
+    		int found = 0;
     		// Check each row
     		for(int j = topIndex; j < botIndex; ++j) {
     			if( (input.getPixel(i, j) & 0xFF ) < THRESH)
-    				found = true;
+    				found++;
     		}
-    		if(found) {
+    		if(found > foundThres) {
     			leftIndex = i;
     			break;
     		}
     	}
     	
     	for(int i = input.getWidth()-1; i >= leftIndex; --i) {
-    		boolean found = false;
+    		int found = 0;
     		// Check each row
     		for(int j = topIndex; j < botIndex; ++j) {
     			if( (input.getPixel(i, j) & 0xFF) < THRESH)
-    				found = true;
+    				found++;
     		}
-    		if(found) {
+    		if(found > foundThres) {
     			rightIndex = i;
     			break;
     		}
@@ -432,7 +443,7 @@ public class MathOcr extends Activity {
     					}
     				}
     				
-    				if(count > 0)
+    				if( ( (double) count)/(width * height) > 0)
     					neuralInput[i][j] = true;
     			}
     		}
