@@ -2,50 +2,73 @@ package com.example.ocrmath;
 
 import java.util.ArrayList;
 
-import android.os.Bundle;
 import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
+import android.net.Uri;
+import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.ImageView;
 
 public class MathOcr extends Activity {
 	ImageView crop;
+	ImageView gray;
+	ImageView start;
+	
+	Bitmap base;
+	
+    private static final int SELECT_PICTURE = 1;
+
+    private String selectedImagePath;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_math_ocr);
-        ImageView start = (ImageView) findViewById(R.id.baseImage);
-        ImageView gray = (ImageView) findViewById(R.id.grayedImage);
+        
+        start = (ImageView) findViewById(R.id.baseImage);
+        gray = (ImageView) findViewById(R.id.grayedImage);
         crop = (ImageView) findViewById(R.id.croppedImage);
-       //ImageView cropH = (ImageView) findViewById(R.id.croppedHImage);
+        
+        base = BitmapFactory.decodeResource(getResources(), R.drawable.test1p1);
+        if(base == null){
+        	Log.v("asdf", "base is null");
+        }
+		setupViews();
+        
+    	((Button) findViewById(R.id.pictureButton))
+        .setOnClickListener(new OnClickListener() {
 
-        
-        Bitmap testImg = BitmapFactory.decodeResource(getResources(), R.drawable.test1p1);
-        //start.setImageBitmap(testImg);
-        
-        Bitmap grayScale = toGrayscale(testImg);
-        testImg.recycle();
+            public void onClick(View arg0) {
+
+                // in onCreate or any event where your want the user to
+                // select a file
+                Intent intent = new Intent();
+                intent.setType("image/*");
+                intent.setAction(Intent.ACTION_GET_CONTENT);
+                startActivityForResult(Intent.createChooser(intent,
+                        "Select Picture"), SELECT_PICTURE);
+            }
+        });
+    }
+    
+    private void setupViews(){
+        Bitmap grayScale = toGrayscale(base);
         Bitmap cropped= crop(grayScale);
-   
-        //gray.setImageBitmap(cropped);
+        //grayScale.recycle();
+        start.setImageBitmap(base);
+        gray.setImageBitmap(cropped);
         ArrayList<boolean[][]> result = scaleBitmap(cropped,30,30,findIndices(cropped));
-        cropped.recycle();
-        crop.setImageBitmap(toBitmap(result.get(2)));
-        
-        Log.v("asdf","result length: " + result.size());
-        //Log.v("asdf"," " + result.get(3)[0][0] );
-//        Bitmap cropped = cropVertically(grayScale);
-//        crop.setImageBitmap(cropped);
-//        
-//        Bitmap croppedH = cropHorizontally(cropped);
-//        cropH.setImageBitmap(croppedH);
+        //cropped.recycle();
+        crop.setImageBitmap(toBitmap(result.get(0)));
     }
 
     @Override
@@ -69,34 +92,21 @@ public class MathOcr extends Activity {
     }
     
     public Bitmap toGrayscale(Bitmap input) {
-//    	int width, height;
-//        height = input.getHeight();
-//        width = input.getWidth();    
-//
-//        Bitmap bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-//        Canvas c = new Canvas(bmpGrayscale);
-//        Paint paint = new Paint();
-//        ColorMatrix cm = new ColorMatrix();
-//        cm.setSaturation(0);
-//        ColorMatrixColorFilter f = new ColorMatrixColorFilter(cm);
-//        paint.setColorFilter(f);
-//        c.drawBitmap(input, 0, 0, paint);
-//        return bmpGrayscale;
-   	
-    	Bitmap grayScaled = Bitmap.createBitmap(input.getWidth(),input.getHeight(),input.getConfig());
+    	Bitmap grayScaled = Bitmap.createBitmap(input.getWidth(),input.getHeight(),Bitmap.Config.RGB_565);
 		int avg = 0;
 		int black = 0;
 		int white = -1;
-    	for(int i = 0; i < grayScaled.getHeight(); ++i) {
-    		for(int j = 0; j < grayScaled.getWidth(); ++j) {
+		int height = input.getHeight();
+		int width = input.getWidth();
+    	for(int i = 0; i < height; ++i) {
+    		for(int j = 0; j < width; ++j) {
     			// color is really just an int
     			avg = (input.getPixel(j, i) >> 16) & 0xFF;
     			avg += (input.getPixel(j, i) >> 8) & 0xFF;
     			avg += (input.getPixel(j, i) & 0xFF);
     			avg /= 3;
-    			avg &= 0xFF;
-    			avg = (avg << 16) | (avg << 8) | avg;
-    			if ((avg & 0xFF) < 155)
+    			//avg = (avg << 16) | (avg << 8) | avg;
+    			if (avg  < 145)
     				grayScaled.setPixel(j, i, black);
     			else
     				grayScaled.setPixel(j, i, white);
@@ -110,12 +120,15 @@ public class MathOcr extends Activity {
     	int botIndex = -1;
     	int THRESH = 135;
     	
+    	int height = input.getHeight();
+    	int width = input.getWidth();
+    	
     	// Find top and bottom indices
     	
-    	for(int i = 0; i < input.getHeight(); ++i) {
+    	for(int i = 0; i < height; ++i) {
     		boolean found = false;
     		// Check each row
-    		for(int j = 0; j < input.getWidth(); ++j) {
+    		for(int j = 0; j < width; ++j) {
     			if( (input.getPixel(j, i) & 0xFF ) < THRESH)
     				found = true;
     		}
@@ -125,10 +138,10 @@ public class MathOcr extends Activity {
     		}
     	}
     	
-    	for(int i = input.getHeight()-1; i >= 0; --i) {
+    	for(int i = height - 1; i >= 0; --i) {
     		boolean found = false;
     		// Check each row
-    		for(int j = 0; j < input.getWidth(); ++j) {
+    		for(int j = 0; j < width; ++j) {
     			if( (input.getPixel(j, i) & 0xFF) < THRESH)
     				found = true;
     		}
@@ -140,9 +153,9 @@ public class MathOcr extends Activity {
     	  	
     	Bitmap cropped = Bitmap.createBitmap(input.getWidth(),Math.abs(botIndex - topIndex),input.getConfig());
     	
-    	
-    	for(int i = 0; i < Math.abs(botIndex - topIndex); ++i) {
-    		for(int j = 0; j < input.getWidth(); ++j) {
+    	int diff = botIndex - topIndex;
+    	for(int i = 0; i < diff; ++i) {
+    		for(int j = 0; j < width; ++j) {
     			cropped.setPixel(j, i, input.getPixel(j,topIndex+i));
     		}
     	}
@@ -288,7 +301,7 @@ public class MathOcr extends Activity {
     			duple.add(0, currentStart-1);
     			duple.add(1, i+1);
     			indices.add(duple);
-    			Log.v("ocrdebug","start: " + currentStart + " " + i);
+    			//Log.v("ocrdebug","start: " + currentStart + " " + i);
     			foundStart = false;
     		}
     	}
@@ -332,6 +345,7 @@ public class MathOcr extends Activity {
     	boolean[][] neuralInput;
     	ArrayList<boolean[][]> ret = new ArrayList<boolean[][]>(pairs.size());
     	
+    	Log.v("asdf", "pairs size: " + pairs.size());
     	
     	// Loop over the pairs in the list.
     	//ArrayList<Integer> pair = pairs.get(1);
@@ -357,8 +371,18 @@ public class MathOcr extends Activity {
     			}
     		}
     		
+    		int temp = 0;
+    		if(topIndex > botIndex){
+    			temp = botIndex;
+    			botIndex = topIndex;
+    			topIndex = temp;
+    		}
+    		
     		// Get the image height.
     		imageHeight = Math.abs(botIndex - topIndex);
+    		
+    		if(imageWidth * imageHeight < 9570)
+    			continue;
     		
     		if(imageWidth > imageHeight)
     			largestDim = imageWidth;
@@ -375,6 +399,9 @@ public class MathOcr extends Activity {
     			}
     		}
     		
+    		Log.v("asdf", "botIndex is: " + botIndex);
+    		Log.v("asdf", "topIndex is: " + topIndex);
+    		Log.v("asdf", "imageHeight is: " + imageHeight);
     		// now center the old bitmap image on the new bitmap (presumably the new image is wider, but it could be taller)
     		int startWidth = largestDim/2 - imageWidth/2;
     		int startHeight = largestDim/2 - imageHeight/2;
@@ -415,4 +442,32 @@ public class MathOcr extends Activity {
     	
     	return ret;
     }
+
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+	    if (resultCode == RESULT_OK) {
+	        if (requestCode == SELECT_PICTURE) {
+	            Uri selectedImageUri = data.getData();
+	            selectedImagePath = getPath(selectedImageUri);
+	            base.recycle();
+	            base = BitmapFactory.decodeFile(selectedImagePath);
+	            try {
+					setupViews();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					
+					e.printStackTrace();
+					Log.e("debug", "No image found.");
+				}
+	        }
+	    }
+	}
+
+	public String getPath(Uri uri) {
+	    String[] projection = { MediaStore.Images.Media.DATA };
+	    Cursor cursor = managedQuery(uri, projection, null, null, null);
+	    int column_index = cursor
+	            .getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+	    cursor.moveToFirst();
+	    return cursor.getString(column_index);
+	}
 }
