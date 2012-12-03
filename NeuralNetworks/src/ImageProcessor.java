@@ -41,9 +41,11 @@ public class ImageProcessor {
 
 		ArrayList<boolean[][]> result = scaleBitmap(crop, outputWidth, outputHeight, findIndices(crop));
 
+    System.out.println(findIndices(crop));
+    System.out.println(name.length());
     if (result.size() != name.length()) {
       System.out.println("\tmismatch");
-      return;
+      //return;
     }
 
 		writeInputsToFile(result, outPath + "inputs.txt");
@@ -160,7 +162,7 @@ public class ImageProcessor {
 		}
 		return grayScaled;
 	}
-
+/*
 	public BufferedImage cropVertically(BufferedImage input) {
 		int topIndex = -1;
 		int botIndex = -1;
@@ -252,7 +254,7 @@ public class ImageProcessor {
 
 		return cropped;
 	}
-
+*/
 	public BufferedImage crop(BufferedImage input) {
 		int leftIndex = -1;
 		int rightIndex = -1;
@@ -341,7 +343,7 @@ public class ImageProcessor {
 			if(dark && !foundStart) {
 				currentStart = i;
 				foundStart = true;
-			} else if (!dark && foundStart) {
+			} else if (!dark && foundStart && ( (i - currentStart) > 4)) {
 				ArrayList<Integer> duple = new ArrayList<Integer>(2);
 				duple.add(0, currentStart-1);
 				duple.add(1, i+1);
@@ -358,16 +360,16 @@ public class ImageProcessor {
 			indices.add(duple);
 		}
 
-		//	    	for(ArrayList<Integer> duple: indices) {
-		//	    		int red = (255 << 16);
-		//	    		int green = (255 << 8);
-		//	    		for(int j = 0; j < input.getHeight(); ++j) {
-		//	    			input.setRGB(duple.get(0), j, red); 
-		//	    		}
-		//	    		for(int j = 0; j < input.getHeight(); ++j) {
-		//	    			input.setRGB(duple.get(1), j, green); 
-		//	    		}
-		//	    	}
+		//	for(ArrayList<Integer> duple: indices) {
+		//		int red = (255 << 16);
+		//		int green = (255 << 8);
+		//		for(int j = 0; j < input.getHeight(); ++j) {
+		//			input.setRGB(duple.get(0), j, red); 
+		//		}
+		//		for(int j = 0; j < input.getHeight(); ++j) {
+		//			input.setRGB(duple.get(1), j, green); 
+		//		}
+		//	}
 
 		return indices;
 
@@ -501,8 +503,9 @@ public class ImageProcessor {
 		};
 		
 		String outpath = cwd + File.separator + "output";
-		for( File image: workingDir.listFiles(nameFilter) ) {
-			String name = image.getName().split("\\.")[0];
+		//for( File image: workingDir.listFiles(nameFilter) ) {
+		{ File image = workingDir.listFiles(nameFilter)[11];
+      String name = image.getName().split("\\.")[0];
 			System.out.println(name);
 			proc.printCharacters(image, outpath, name);
 		}
