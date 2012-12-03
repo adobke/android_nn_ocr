@@ -16,8 +16,8 @@ public class ImageProcessor {
 	
 	public static final String symbols = "0123456789+-";
 	
-	public static final int outputWidth = 20;
-	public static final int outputHeight = 20;
+	public static final int outputWidth = 10;
+	public static final int outputHeight = 10;
 	
 	BufferedImage crop;
 	BufferedImage gray;
@@ -40,6 +40,11 @@ public class ImageProcessor {
 		BufferedImage crop = crop(gray);
 
 		ArrayList<boolean[][]> result = scaleBitmap(crop, outputWidth, outputHeight, findIndices(crop));
+
+    if (result.size() != name.length()) {
+      System.out.println("\tmismatch");
+      return;
+    }
 
 		writeInputsToFile(result, outPath + "inputs.txt");
 		writeAnswersToFile(outPath + "answers.txt", name);
@@ -488,7 +493,7 @@ public class ImageProcessor {
 		//String name = "1+2";
 		
 		String cwd = System.getProperty("user.dir");
-		File workingDir = new File(cwd);
+		File workingDir = new File(cwd + File.separator + "inputs");
 		FilenameFilter nameFilter = new FilenameFilter() {
 			public boolean accept(File file, String name){
 				return name.endsWith(".jpg");
