@@ -12,7 +12,7 @@ targets = answers';
 
 % Create a Pattern Recognition Network
 hiddenLayerSize = 10;
-net = feedforwardnet([25,25]);
+net = feedforwardnet([27,27]);
 net = init(net);
 % Choose Input and Output Pre/Post-Processing Functions
 % For a list of all processing functions type: help nnprocess
