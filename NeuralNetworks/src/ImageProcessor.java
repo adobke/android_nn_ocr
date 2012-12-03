@@ -41,11 +41,12 @@ public class ImageProcessor {
 
 		ArrayList<boolean[][]> result = scaleBitmap(crop, outputWidth, outputHeight, findIndices(crop));
 
-    System.out.println(findIndices(crop));
+    System.out.println(findIndices(crop).size());
+    System.out.println(result.size());
     System.out.println(name.length());
     if (result.size() != name.length()) {
       System.out.println("\tmismatch");
-      //return;
+      return;
     }
 
 		writeInputsToFile(result, outPath + "inputs.txt");
@@ -427,7 +428,7 @@ public class ImageProcessor {
 			// Get the image height.
 			imageHeight = Math.abs(botIndex - topIndex);
 
-			if(imageWidth * imageHeight < 9570)
+			if(imageWidth * imageHeight < 40)
 				continue;
 
 			if(imageWidth > imageHeight)
@@ -503,8 +504,8 @@ public class ImageProcessor {
 		};
 		
 		String outpath = cwd + File.separator + "output";
-		//for( File image: workingDir.listFiles(nameFilter) ) {
-		{ File image = workingDir.listFiles(nameFilter)[11];
+		for( File image: workingDir.listFiles(nameFilter) ) {
+		//{ File image = workingDir.listFiles(nameFilter)[11];
       String name = image.getName().split("\\.")[0];
 			System.out.println(name);
 			proc.printCharacters(image, outpath, name);
