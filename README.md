@@ -1,2 +1,1 @@
-android_nn_ocr
-==============
+Go here: http://www.cs.hmc.edu/~adobke/nn/
